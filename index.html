@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>مخطط رحلة بريطانيا | نواف وناصر 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Changa:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080b14;--surf:#0f1520;--surf2:#151d2e;--surf3:#1c2840;
+  --bdr:rgba(255,255,255,0.07);--text:#e4e8f1;--muted:#7a869e;--faint:#3d4a63;
+  --accent:#4f8fff;--accent2:#6cb4ff;--green:#22c997;--gold:#ffb444;--warn:#ff6b6b;--purple:#a78bfa;--pink:#f472b6;
+  --font:'Tajawal',sans-serif;--font2:'Changa',sans-serif;
+  --glow:0 0 30px rgba(79,143,255,0.15);
+  --card-radius:16px;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh;font-size:1rem;line-height:1.7;overflow-x:hidden}
+button{cursor:pointer;font-family:inherit}
+a{text-decoration:none}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--faint);border-radius:99px}
+
+/* ===== ANIMATED BG ===== */
+.bg-glow{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.bg-glow .orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:.12;animation:orbFloat 20s infinite ease-in-out}
+.bg-glow .orb:nth-child(1){width:600px;height:600px;background:#4f8fff;top:-10%;right:-5%;animation-delay:0s}
+.bg-glow .orb:nth-child(2){width:500px;height:500px;background:#a78bfa;bottom:-10%;left:-5%;animation-delay:-7s}
+.bg-glow .orb:nth-child(3){width:400px;height:400px;background:#22c997;top:40%;left:30%;animation-delay:-14s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.1)}66%{transform:translate(-30px,40px) scale(.9)}}
+
+/* ===== HERO ===== */
+.hero{
+  position:relative;z-index:1;padding:3rem 1.5rem 2.5rem;text-align:center;
+  background:linear-gradient(170deg,#0a0f1c 0%,#111b33 50%,#0a0f1c 100%);
+  border-bottom:1px solid var(--bdr);overflow:hidden;
+}
+.hero::before{content:'';position:absolute;top:-50%;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,rgba(79,143,255,.12) 0%,transparent 70%);pointer-events:none}
+.hero-flag{display:inline-flex;align-items:center;gap:8px;background:rgba(79,143,255,.1);border:1px solid rgba(79,143,255,.2);border-radius:999px;padding:6px 20px;margin-bottom:1.2rem;font-size:.8rem;color:var(--gold);font-weight:700;backdrop-filter:blur(10px);letter-spacing:.5px}
+.hero h1{font-family:var(--font2);font-size:clamp(1.8rem,4vw,3.2rem);font-weight:800;margin-bottom:.6rem;background:linear-gradient(135deg,#fff 30%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:1px}
+.hero .sub{color:var(--muted);font-size:.95rem;max-width:600px;margin:0 auto 2rem;line-height:1.8}
+
+/* Countdown */
+.countdown{display:inline-flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:1.5rem}
+.cd-box{background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:14px;padding:12px 18px;min-width:80px;backdrop-filter:blur(5px)}
+.cd-num{font-family:var(--font2);font-size:1.8rem;font-weight:800;color:var(--accent2);line-height:1}
+.cd-lbl{font-size:.7rem;color:var(--muted);margin-top:4px}
+
+.dates-row{display:inline-flex;align-items:center;gap:1rem;flex-wrap:wrap;justify-content:center;background:var(--surf2);border:1px solid var(--bdr);border-radius:16px;padding:14px 28px;box-shadow:var(--glow)}
+.dt{display:flex;flex-direction:column;align-items:center}
+.dt .lb{font-size:.7rem;color:var(--muted)}
+.dt .vl{font-size:.9rem;font-weight:700;color:var(--accent2)}
+.sep{color:var(--faint);font-size:1.3rem}
+.dur{background:linear-gradient(135deg,var(--accent),#7c5cfc);color:#fff;border-radius:999px;padding:3px 14px;font-size:.75rem;font-weight:700}
+
+/* ===== LAYOUT ===== */
+.main{max-width:1100px;margin:0 auto;padding:1.5rem 1rem 4rem;position:relative;z-index:1}
+
+/* ===== TABS ===== */
+.tabs-wrap{position:sticky;top:0;z-index:50;background:rgba(8,11,20,.92);backdrop-filter:blur(16px);padding:10px 0;margin-bottom:1.5rem;border-bottom:1px solid var(--bdr)}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding:0 4px}
+.tabs::-webkit-scrollbar{display:none}
+.tb{flex-shrink:0;padding:10px 16px;border:none;background:none;color:var(--muted);font-size:.85rem;font-weight:700;border-radius:12px;transition:all .25s;white-space:nowrap;position:relative}
+.tb.on{background:linear-gradient(135deg,var(--accent),#6c5ce7);color:#fff;box-shadow:0 4px 20px rgba(79,143,255,.3)}
+.tb:not(.on):hover{background:rgba(255,255,255,.05);color:var(--text)}
+.tb .tab-icon{margin-left:6px;font-size:1rem}
+
+/* ===== PANELS ===== */
+.pnl{display:none}
+.pnl.on{display:block;animation:fadeSlide .4s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== CARD ===== */
+.card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--card-radius);padding:1.5rem;margin-bottom:1.2rem;transition:border-color .3s}
+.card:hover{border-color:rgba(79,143,255,.15)}
+.card-glass{background:rgba(79,143,255,.04);border:1px solid rgba(79,143,255,.15);border-radius:var(--card-radius);padding:1.5rem;margin-bottom:1.2rem}
+.ch{display:flex;align-items:center;gap:12px;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--bdr)}
+.ci{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0}
+.ct{font-family:var(--font2);font-size:1.1rem;font-weight:700}
+.cs{font-size:.78rem;color:var(--muted)}
+
+/* ===== MAP ===== */
+#map{height:500px;width:100%;border-radius:14px;border:2px solid var(--bdr);z-index:1}
+.map-legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:1rem}
+.map-leg-item{display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted)}
+.map-leg-dot{width:10px;height:10px;border-radius:50%}
+
+/* ===== KPI ===== */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.25rem}
+.kpi{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.2rem;text-align:center;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:3px 3px 0 0}
+.kpi.bl::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.kpi.gr::before{background:linear-gradient(90deg,var(--green),#34d399)}
+.kpi.wn::before{background:linear-gradient(90deg,var(--gold),#fcd34d)}
+.kpi.pr::before{background:linear-gradient(90deg,var(--purple),#c4b5fd)}
+.kv{font-family:var(--font2);font-size:1.6rem;font-weight:800;margin-bottom:2px}
+.kl{font-size:.78rem;color:var(--muted);font-weight:600}
+.kpi.bl .kv{color:var(--accent2)}
+.kpi.gr .kv{color:var(--green)}
+.kpi.wn .kv{color:var(--gold)}
+.kpi.pr .kv{color:var(--purple)}
+
+/* ===== PROGRESS ===== */
+.prog-w{margin:.75rem 0 1.25rem}
+.prog-l{display:flex;justify-content:space-between;font-size:.8rem;color:var(--muted);margin-bottom:6px;font-weight:600}
+.prog-b{background:var(--surf2);border-radius:999px;height:10px;overflow:hidden;border:1px solid var(--bdr)}
+.prog-f{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width .8s cubic-bezier(.4,0,.2,1)}
+
+/* ===== EXPENSE ROW ===== */
+.er{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--bdr)}
+.er:last-child{border-bottom:none}
+.ee{font-size:1.4rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--surf2);border-radius:10px}
+.ei{flex:1;min-width:0}
+.en{font-size:.95rem;font-weight:700}
+.es{font-size:.78rem;color:var(--muted)}
+.ea{font-size:1rem;font-weight:800;color:var(--gold);white-space:nowrap}
+.badge{font-size:.68rem;border-radius:999px;padding:3px 10px;font-weight:700;white-space:nowrap}
+.bb{background:rgba(79,143,255,.12);color:var(--accent2)}
+.by{background:rgba(255,180,68,.12);color:var(--gold)}
+.bg{background:rgba(34,201,151,.12);color:var(--green)}
+
+/* ===== INPUT ===== */
+input[type=number],input[type=text],select{
+  width:100%;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;
+  padding:12px 16px;font-family:var(--font);font-size:.9rem;color:var(--text);transition:all .25s;
+}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,143,255,.15)}
+
+/* ===== GRID ===== */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem}
+@media(max-width:700px){.g2{grid-template-columns:1fr}}
+
+/* ===== OPT CARD ===== */
+.oc{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.3rem;transition:all .25s;position:relative;overflow:hidden}
+.oc:hover{transform:translateY(-4px);border-color:rgba(79,143,255,.3);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.oc::after{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.oc:nth-child(1)::after{background:var(--accent)}
+.oc:nth-child(2)::after{background:var(--green)}
+.oc:nth-child(3)::after{background:var(--purple)}
+.oc:nth-child(4)::after{background:var(--gold)}
+.or{font-size:2rem;margin-bottom:10px}
+.on2{font-size:1rem;font-weight:800;margin-bottom:4px;font-family:var(--font2)}
+.ob{font-size:.8rem;color:var(--muted);margin-bottom:10px;line-height:1.6}
+.op{font-size:1rem;font-weight:800;color:var(--gold)}
+.on3{font-size:.75rem;color:var(--muted)}
+
+/* ===== BUTTONS ===== */
+.btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--accent),#6c5ce7);color:#fff;border-radius:12px;padding:11px 20px;font-size:.88rem;font-family:var(--font);font-weight:700;border:none;transition:all .25s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(79,143,255,.35)}
+.btn.out{background:rgba(79,143,255,.08);color:var(--accent2);border:1px solid rgba(79,143,255,.25)}
+.btn.out:hover{background:rgba(79,143,255,.15)}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* ===== CHECKLIST ===== */
+.cl{list-style:none}
+.cl li{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--bdr);font-size:.92rem}
+.cl li:last-child{border-bottom:none}
+.cb{width:24px;height:24px;border-radius:8px;border:2px solid var(--faint);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .25s;margin-top:2px;background:var(--surf);color:transparent;font-size:.8rem;font-weight:800}
+.cb.ck{background:var(--green);border-color:var(--green);color:#fff;box-shadow:0 0 12px rgba(34,201,151,.3)}
+.ct2.ck{text-decoration:line-through;color:var(--faint)}
+
+/* ===== DAY CARD ===== */
+.dc{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:1.3rem;margin-bottom:.8rem;transition:all .25s}
+.dc:hover{border-color:rgba(79,143,255,.3)}
+.dh{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.dl{font-family:var(--font2);font-size:1.05rem;font-weight:700}
+.dd{font-size:.78rem;color:var(--gold);font-weight:700;margin-top:4px}
+.dchv{color:var(--muted);transition:transform .3s;flex-shrink:0}
+.dchv.op2{transform:rotate(180deg);color:var(--accent2)}
+.db{max-height:0;overflow:hidden;transition:all .4s ease-out;opacity:0}
+.db.op2{max-height:3000px;padding-top:1.2rem;opacity:1;border-top:1px solid var(--bdr);margin-top:1rem}
+.act{display:flex;gap:12px;margin-bottom:14px;font-size:.92rem;align-items:center;flex-wrap:wrap}
+.at{color:var(--accent2);min-width:90px;font-weight:700;white-space:nowrap;flex-shrink:0;background:rgba(79,143,255,.08);padding:5px 10px;border-radius:8px;text-align:center;font-size:.82rem}
+.ax{flex:1;min-width:200px;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+
+/* Google Maps link */
+.gmap-link{color:#fff;text-decoration:none;font-size:.78rem;display:inline-flex;align-items:center;gap:4px;background:var(--green);padding:4px 12px;border-radius:8px;font-weight:700;transition:.25s;box-shadow:0 2px 8px rgba(34,201,151,.25)}
+.gmap-link:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.gmap-link.blue-btn{background:var(--accent);box-shadow:0 2px 8px rgba(79,143,255,.25)}
+
+/* ===== TIP ===== */
+.tip{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.3rem;margin-bottom:.8rem;display:flex;gap:15px;align-items:flex-start;border-right:4px solid var(--accent);transition:.25s}
+.tip:hover{border-right-color:var(--gold)}
+.tip .ti{font-size:1.5rem;flex-shrink:0;background:rgba(255,255,255,.04);padding:10px;border-radius:12px}
+.tip .tt{font-family:var(--font2);font-size:1rem;font-weight:700;margin-bottom:4px}
+.tip .td{font-size:.85rem;color:var(--muted);line-height:1.8}
+
+/* ===== RESTAURANT CARD ===== */
+.rest-card{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.2rem;transition:all .25s;position:relative;overflow:hidden}
+.rest-card:hover{transform:translateY(-3px);border-color:rgba(79,143,255,.25);box-shadow:0 6px 24px rgba(0,0,0,.3)}
+.rest-city{font-size:.68rem;color:var(--accent2);font-weight:700;background:rgba(79,143,255,.1);padding:3px 10px;border-radius:99px;display:inline-block;margin-bottom:8px}
+.rest-name{font-family:var(--font2);font-size:1rem;font-weight:700;margin-bottom:4px}
+.rest-type{font-size:.78rem;color:var(--gold);font-weight:600;margin-bottom:6px}
+.rest-desc{font-size:.82rem;color:var(--muted);line-height:1.6;margin-bottom:10px}
+.rest-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.rest-tag{font-size:.68rem;padding:3px 8px;border-radius:6px;font-weight:600}
+.rest-tag.halal{background:rgba(34,201,151,.12);color:var(--green)}
+.rest-tag.price{background:rgba(255,180,68,.12);color:var(--gold)}
+.rest-tag.rating{background:rgba(167,139,250,.12);color:var(--purple)}
+
+/* ===== SECTION TITLE ===== */
+.sec-title{font-family:var(--font2);font-size:1.2rem;font-weight:800;margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* ===== FILTER BTNS ===== */
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.2rem}
+.flt{padding:7px 16px;border:1px solid var(--bdr);background:var(--surf2);color:var(--muted);font-size:.8rem;font-weight:700;border-radius:99px;transition:.2s;font-family:var(--font)}
+.flt.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.flt:hover:not(.on){background:var(--surf3);color:var(--text)}
+
+/* ===== CURRENCY CONVERTER ===== */
+.conv-row{display:flex;align-items:center;gap:12px;margin-top:1rem}
+.conv-res{font-family:var(--font2);font-size:1.4rem;font-weight:800;color:var(--green)}
+
+/* ===== EMERGENCY ===== */
+.emer{display:flex;align-items:center;gap:14px;padding:14px;background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.15);border-radius:12px;margin-bottom:.7rem}
+.emer-icon{font-size:1.5rem;flex-shrink:0}
+.emer-title{font-weight:700;font-size:.9rem}
+.emer-num{font-size:.85rem;color:var(--warn);font-weight:700;direction:ltr}
+
+/* ===== SPLIT CALC ===== */
+.split-row{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.split-result{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.2rem;text-align:center;margin-top:1rem}
+.split-amount{font-family:var(--font2);font-size:2rem;font-weight:800;color:var(--gold)}
+
+/* ===== NOTES ===== */
+textarea{width:100%;min-height:150px;background:var(--surf2);border:1px solid var(--bdr);border-radius:12px;padding:14px;font-family:var(--font);font-size:.9rem;color:var(--text);resize:vertical;transition:.25s;line-height:1.8}
+textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,143,255,.15)}
+
+/* ===== WEATHER ===== */
+.weather-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:1rem}
+.weather-card{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;padding:1.2rem;text-align:center;transition:.25s}
+.weather-card:hover{border-color:rgba(79,143,255,.2)}
+.weather-icon{font-size:2.5rem;margin-bottom:8px}
+.weather-city{font-family:var(--font2);font-weight:700;font-size:.95rem;margin-bottom:4px}
+.weather-temp{font-family:var(--font2);font-size:1.8rem;font-weight:800;color:var(--accent2)}
+.weather-desc{font-size:.78rem;color:var(--muted);margin-top:4px}
+
+/* ===== TOTAL ROW ===== */
+.tot{padding-top:1.2rem;border-top:2px dashed var(--bdr);margin-top:.8rem;display:flex;justify-content:space-between;align-items:center}
+.tot span:first-child{font-size:1.1rem;font-weight:700}
+.tot span:last-child{font-family:var(--font2);font-size:1.5rem;font-weight:800;color:var(--gold)}
+
+/* ===== PHRASE CARD ===== */
+.phrase{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--bdr);gap:10px}
+.phrase:last-child{border-bottom:none}
+.phrase-ar{font-weight:700;font-size:.92rem;color:var(--text)}
+.phrase-en{font-size:.85rem;color:var(--accent2);direction:ltr;text-align:left;font-weight:600}
+
+/* ===== GALLERY CARD ===== */
+.gallery-item{background:var(--surf2);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;transition:.25s}
+.gallery-item:hover{transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.gallery-emoji{font-size:3rem;height:100px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,rgba(79,143,255,.08),rgba(167,139,250,.08))}
+.gallery-info{padding:1rem}
+.gallery-name{font-family:var(--font2);font-weight:700;font-size:.95rem;margin-bottom:4px}
+.gallery-loc{font-size:.78rem;color:var(--muted)}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:600px){
+  .kpis{grid-template-columns:1fr 1fr}
+  .act{flex-direction:column;align-items:flex-start;gap:6px}
+  .at{width:100%;text-align:right}
+  .tb{padding:9px 12px;font-size:.8rem}
+  .g3{grid-template-columns:1fr}
+  .countdown{gap:8px}
+  .cd-box{min-width:65px;padding:10px 12px}
+  .cd-num{font-size:1.4rem}
+  .weather-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="bg-glow"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>
+
+<!-- ===== HERO ===== -->
+<div class="hero">
+  <div class="hero-flag">🇬🇧 رحلة العمر — بريطانيا 2026</div>
+  <h1>نواف & ناصر في بريطانيا</h1>
+  <p>ملف تفاعلي شامل: البرنامج، الخريطة، الميزانية، المطاعم، الأماكن السياحية، الطوارئ، الطقس، وكل شي تحتاجونه!</p>
+  
+  <div class="countdown" id="countdown"></div>
+  
+  <div class="dates-row">
+    <div class="dt"><span class="lb">إقلاع الرياض</span><span class="vl">18 أبريل 2026</span></div>
+    <span class="sep">✈️</span>
+    <div class="dt"><span class="lb">العودة من لندن</span><span class="vl">3 مايو 2026</span></div>
+    <span class="dur">15 يوم مغامرة</span>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+
+  <!-- TABS -->
+  <div class="tabs-wrap">
+    <div class="tabs" id="tabs-bar">
+      <button class="tb on" onclick="sw('itin',this)"><span class="tab-icon">🗓</span> البرنامج</button>
+      <button class="tb" onclick="sw('map',this);setTimeout(()=>map.invalidateSize(),200)"><span class="tab-icon">🗺️</span> الخريطة</button>
+      <button class="tb" onclick="sw('rest',this)"><span class="tab-icon">🍽️</span> المطاعم</button>
+      <button class="tb" onclick="sw('places',this)"><span class="tab-icon">📸</span> أماكن سياحية</button>
+      <button class="tb" onclick="sw('budget',this)"><span class="tab-icon">💰</span> الميزانية</button>
+      <button class="tb" onclick="sw('transport',this)"><span class="tab-icon">🚗</span> السيارة والسكن</button>
+      <button class="tb" onclick="sw('check',this)"><span class="tab-icon">✅</span> المهام</button>
+      <button class="tb" onclick="sw('weather',this)"><span class="tab-icon">🌦️</span> الطقس</button>
+      <button class="tb" onclick="sw('emergency',this)"><span class="tab-icon">🆘</span> الطوارئ</button>
+      <button class="tb" onclick="sw('phrases',this)"><span class="tab-icon">🗣️</span> عبارات مفيدة</button>
+      <button class="tb" onclick="sw('notes',this)"><span class="tab-icon">📝</span> ملاحظات</button>
+      <button class="tb" onclick="sw('tips',this)"><span class="tab-icon">💡</span> نصائح</button>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: ITINERARY ==================== -->
+  <div id="pnl-itin" class="pnl on">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">📌 الانطلاق من بورتسموث يوم 25 أبريل — اضغط على كل يوم عشان تشوف الخيارات وروابط قوقل ماب — اختاروا اللي يناسب جوكم!</p>
+    </div>
+    <div id="itin-list"></div>
+  </div>
+
+  <!-- ==================== PANEL: MAP ==================== -->
+  <div id="pnl-map" class="pnl">
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(79,143,255,.12)">📍</div><div><div class="ct">خريطة المسار الكاملة</div><div class="cs">اضغط على العلامات لتفاصيل كل محطة — الخط المتقطع يوضح مسار الرحلة</div></div></div>
+      <div id="map"></div>
+      <div class="map-legend">
+        <div class="map-leg-item"><div class="map-leg-dot" style="background:var(--accent)"></div> مدينة رئيسية</div>
+        <div class="map-leg-item"><div class="map-leg-dot" style="background:var(--green)"></div> محطة Road Trip</div>
+        <div class="map-leg-item"><div class="map-leg-dot" style="background:var(--gold)"></div> مطار</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: RESTAURANTS ==================== -->
+  <div id="pnl-rest" class="pnl">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">🍽️ قائمة بأفضل المطاعم في كل مدينة — تتضمن خيارات حلال ومتنوعة. استخدم الفلتر للتصفية حسب المدينة!</p>
+    </div>
+    
+    <div class="filters" id="rest-filters">
+      <button class="flt on" onclick="filterRest('all',this)">الكل</button>
+      <button class="flt" onclick="filterRest('portsmouth',this)">⚓ بورتسموث</button>
+      <button class="flt" onclick="filterRest('london',this)">🏙️ لندن</button>
+      <button class="flt" onclick="filterRest('edinburgh',this)">🏰 إدنبرة</button>
+      <button class="flt" onclick="filterRest('lakes',this)">⛰️ البحيرات</button>
+      <button class="flt" onclick="filterRest('york',this)">🛡️ يورك</button>
+      <button class="flt" onclick="filterRest('highlands',this)">🏴 الهاي لاندز</button>
+      <button class="flt" onclick="filterRest('oxford',this)">📚 أكسفورد</button>
+      <button class="flt" onclick="filterRest('brighton',this)">🎡 برايتون</button>
+      <button class="flt" onclick="filterRest('manchester',this)">⚽ مانشستر</button>
+    </div>
+    
+    <div class="g3" id="rest-list"></div>
+  </div>
+
+  <!-- ==================== PANEL: PLACES ==================== -->
+  <div id="pnl-places" class="pnl">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">📸 أماكن سياحية مميزة لازم تزورونها — مقسمة حسب المنطقة!</p>
+    </div>
+    
+    <div class="filters" id="places-filters">
+      <button class="flt on" onclick="filterPlaces('all',this)">الكل</button>
+      <button class="flt" onclick="filterPlaces('portsmouth',this)">⚓ بورتسموث</button>
+      <button class="flt" onclick="filterPlaces('london',this)">🏙️ لندن</button>
+      <button class="flt" onclick="filterPlaces('edinburgh',this)">🏰 إدنبرة</button>
+      <button class="flt" onclick="filterPlaces('lakes',this)">⛰️ البحيرات</button>
+      <button class="flt" onclick="filterPlaces('highlands',this)">🏴 الهاي لاندز</button>
+      <button class="flt" onclick="filterPlaces('york',this)">🛡️ يورك</button>
+      <button class="flt" onclick="filterPlaces('oxford',this)">📚 أكسفورد</button>
+      <button class="flt" onclick="filterPlaces('brighton',this)">🎡 برايتون</button>
+      <button class="flt" onclick="filterPlaces('cotswolds',this)">🌿 كوتسوولدز</button>
+    </div>
+    
+    <div class="g3" id="places-list"></div>
+  </div>
+
+  <!-- ==================== PANEL: BUDGET ==================== -->
+  <div id="pnl-budget" class="pnl">
+    <div class="kpis">
+      <div class="kpi bl"><div class="kv" id="kv-total">0</div><div class="kl">الميزانية الكلية</div></div>
+      <div class="kpi gr"><div class="kv" id="kv-spent">0</div><div class="kl">المصروف التقديري</div></div>
+      <div class="kpi wn"><div class="kv" id="kv-rem">0</div><div class="kl">المتبقي</div></div>
+      <div class="kpi pr"><div class="kv" id="kv-per">0</div><div class="kl">نصيب كل شخص</div></div>
+    </div>
+    <div class="prog-w">
+      <div class="prog-l"><span>نسبة الاستهلاك</span><span id="prog-pct">0%</span></div>
+      <div class="prog-b"><div class="prog-f" id="prog-f" style="width:0%"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(255,180,68,.12)">⚙️</div><div><div class="ct">حدد ميزانية "القطة"</div><div class="cs">المبلغ الإجمالي لك ولناصر بالريال السعودي</div></div></div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="budg-inp" value="18000" oninput="updBudget()">
+        <span style="font-size:.9rem;color:var(--muted);font-weight:800">ر.س</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(34,201,151,.12)">📊</div><div><div class="ct">المصاريف التقديرية المشتركة (15 يوم)</div></div></div>
+      <div class="er"><div class="ee">🚗</div><div class="ei"><div class="en">استئجار سيارة (SUV/Estate)</div><div class="es">استلام وتسليم مطار هيثرو + تأمين شامل</div></div><span class="badge bb">أساسي</span><div class="ea">3,500 ر.س</div></div>
+      <div class="er"><div class="ee">⛽</div><div class="ei"><div class="en">البنزين / الديزل</div><div class="es">حوالي 1500 ميل — بورتسموث + اسكتلندا</div></div><span class="badge by">متغير</span><div class="ea">1,200 ر.س</div></div>
+      <div class="er"><div class="ee">🏨</div><div class="ei"><div class="en">سكن بورتسموث (7 ليالي)</div><div class="es">فندق اقتصادي أو Airbnb بغرفتين</div></div><span class="badge bb">أساسي</span><div class="ea">2,500 ر.س</div></div>
+      <div class="er"><div class="ee">🏴󠁧󠁢󠁳󠁣󠁴󠁿</div><div class="ei"><div class="en">سكن Road Trip (7 ليالي)</div><div class="es">البحيرات، إدنبرة، المرتفعات، يورك</div></div><span class="badge bb">أساسي</span><div class="ea">3,300 ر.س</div></div>
+      <div class="er"><div class="ee">🍔</div><div class="ei"><div class="en">الأكل والشرب (شخصين)</div><div class="es">متوسط 250 ريال يومياً</div></div><span class="badge by">متغير</span><div class="ea">3,750 ر.س</div></div>
+      <div class="er"><div class="ee">🎟️</div><div class="ei"><div class="en">فعاليات ومواقف ودخوليات</div><div class="es">قلاع، متاحف، مواقف المدن</div></div><span class="badge by">متغير</span><div class="ea">800 ر.س</div></div>
+      <div class="tot"><span>المجموع التقديري للقطة</span><span>15,050 ر.س</span></div>
+    </div>
+    
+    <!-- Currency Converter -->
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(167,139,250,.12)">💱</div><div><div class="ct">محول العملات السريع</div><div class="cs">ريال سعودي ↔ جنيه إسترليني (تقريبي)</div></div></div>
+      <div class="conv-row">
+        <input type="number" id="conv-sar" placeholder="المبلغ بالريال" oninput="convertCurrency('sar')">
+        <span style="font-weight:800;color:var(--muted)">⇄</span>
+        <input type="number" id="conv-gbp" placeholder="المبلغ بالجنيه" oninput="convertCurrency('gbp')">
+      </div>
+      <p style="font-size:.78rem;color:var(--faint);margin-top:8px">* السعر التقريبي: 1 جنيه = 4.85 ريال</p>
+    </div>
+
+    <!-- Split Calculator -->
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(244,114,182,.12)">🧮</div><div><div class="ct">حاسبة تقسيم الفاتورة</div><div class="cs">ادخل المبلغ وعدد الأشخاص</div></div></div>
+      <div class="split-row">
+        <input type="number" id="split-amount" placeholder="المبلغ الإجمالي">
+        <input type="number" id="split-people" placeholder="عدد الأشخاص" value="2">
+        <button class="btn" onclick="calcSplit()">احسب</button>
+      </div>
+      <div class="split-result" id="split-result" style="display:none">
+        <div style="font-size:.85rem;color:var(--muted);margin-bottom:4px">نصيب كل شخص</div>
+        <div class="split-amount" id="split-val">0</div>
+        <div style="font-size:.78rem;color:var(--faint);margin-top:4px">ريال سعودي</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: TRANSPORT & ACCOM ==================== -->
+  <div id="pnl-transport" class="pnl">
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(79,143,255,.12)">🚗</div><div><div class="ct">استئجار السيارة (نصائح ذهبية)</div><div class="cs">الاستلام: هيثرو 18 أبريل | التسليم: هيثرو 3 مايو</div></div></div>
+      <p style="color:var(--text);font-size:.92rem;margin-bottom:1rem;line-height:1.8">
+        بما أنكم بتطلعون خط طويل لاسكتلندا، لا تاخذون سيارة صغيرة. دوروا على فئة Estate أو SUV متوسط.<br>
+        <span style="color:var(--gold);font-weight:800">⚠️ مهم:</span> سجلوا ناصر كسائق إضافي (Additional Driver) عشان تتناوبون.
+      </p>
+      <div class="btns">
+        <a href="https://www.rentalcars.com" target="_blank" class="btn">🔵 بحث RentalCars</a>
+        <a href="https://www.enterprise.co.uk" target="_blank" class="btn out">🟢 Enterprise</a>
+        <a href="https://www.hertz.co.uk" target="_blank" class="btn out">🟡 Hertz</a>
+      </div>
+    </div>
+
+    <div class="sec-title" style="margin-top:2rem">🏨 خيارات السكن المقترحة</div>
+    <div class="g2">
+      <div class="oc"><div class="or">⚓</div><div class="on2">سكن بورتسموث (18 - 25 أبريل)</div><div class="ob">Travelodge فرع Hilsea أو Airbnb في Southsea (الأفضل — للطبخ والراحة).</div><div class="op">7 ليالي</div><a href="https://www.google.com/maps/search/?api=1&query=Southsea+Portsmouth+hotels" target="_blank" class="gmap-link" style="margin-top:8px">📍 ابحث عن سكن</a></div>
+      <div class="oc"><div class="or">⛰️</div><div class="on2">محطة البحيرات (25 أبريل)</div><div class="ob">نزل في Windermere أو Ambleside — طبيعة خيالية.</div><div class="op">ليلة واحدة</div><a href="https://www.google.com/maps/search/?api=1&query=Windermere+hotels" target="_blank" class="gmap-link" style="margin-top:8px">📍 ابحث عن سكن</a></div>
+      <div class="oc"><div class="or">🏰</div><div class="on2">إدنبرة (26 - 27 أبريل)</div><div class="ob">المدينة زحمة — اسكنوا في الأطراف واستخدموا الباص.</div><div class="op">ليلتين</div><a href="https://www.google.com/maps/search/?api=1&query=Edinburgh+budget+hotels" target="_blank" class="gmap-link" style="margin-top:8px">📍 ابحث عن سكن</a></div>
+      <div class="oc"><div class="or">🏴󠁧󠁢󠁳󠁣󠁴󠁿</div><div class="on2">الهاي لاندز (28-29 أبريل)</div><div class="ob">منطقة Inverness أو Fort William — احجزوا مبكر!</div><div class="op">ليلتين</div><a href="https://www.google.com/maps/search/?api=1&query=Inverness+hotels" target="_blank" class="gmap-link" style="margin-top:8px">📍 ابحث عن سكن</a></div>
+      <div class="oc"><div class="or">🛡️</div><div class="on2">يورك أو مانشستر (30 أبريل)</div><div class="ob">محطة العودة — فندق بسيط لليلة.</div><div class="op">ليلة واحدة</div><a href="https://www.google.com/maps/search/?api=1&query=York+city+centre+hotels" target="_blank" class="gmap-link" style="margin-top:8px">📍 ابحث عن سكن</a></div>
+      <div class="oc"><div class="or">✈️</div><div class="on2">قرب هيثرو (2 مايو)</div><div class="ob">فندق Premier Inn أو Travelodge قريب من المطار.</div><div class="op">ليلة الرجعة</div><a href="https://www.google.com/maps/search/?api=1&query=Heathrow+Airport+Hotels" target="_blank" class="gmap-link blue-btn" style="margin-top:8px">📍 فنادق هيثرو</a></div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: CHECKLIST ==================== -->
+  <div id="pnl-check" class="pnl">
+    <div class="kpis" style="margin-bottom:1.5rem">
+      <div class="kpi gr"><div class="kv" id="check-done">0</div><div class="kl">مكتمل</div></div>
+      <div class="kpi bl"><div class="kv" id="check-total">0</div><div class="kl">إجمالي المهام</div></div>
+      <div class="kpi wn"><div class="kv" id="check-pct">0%</div><div class="kl">نسبة الإنجاز</div></div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="ch"><div class="ci" style="background:rgba(34,201,151,.12)">📋</div><div><div class="ct">مهام أساسية</div><div class="cs" id="cl-prog">0 / 0 مكتملة</div></div></div>
+        <ul class="cl" id="cl-items"></ul>
+      </div>
+      <div class="card">
+        <div class="ch"><div class="ci" style="background:rgba(255,180,68,.12)">🧳</div><div><div class="ct">تجهيز الشنطة</div></div></div>
+        <ul class="cl" id="pk-items"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: WEATHER ==================== -->
+  <div id="pnl-weather" class="pnl">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">🌦️ توقعات الطقس التقريبية لنهاية أبريل — خذوا احتياطاتكم خصوصاً في اسكتلندا!</p>
+    </div>
+    <div class="weather-grid">
+      <div class="weather-card"><div class="weather-icon">🌤️</div><div class="weather-city">لندن / هيثرو</div><div class="weather-temp">14°C</div><div class="weather-desc">مشمس جزئياً — خفيف</div></div>
+      <div class="weather-card"><div class="weather-icon">🌥️</div><div class="weather-city">بورتسموث</div><div class="weather-temp">13°C</div><div class="weather-desc">غائم مع فترات مشمسة</div></div>
+      <div class="weather-card"><div class="weather-icon">🌧️</div><div class="weather-city">منطقة البحيرات</div><div class="weather-temp">10°C</div><div class="weather-desc">أمطار متكررة — جاكيت ضروري</div></div>
+      <div class="weather-card"><div class="weather-icon">🌬️</div><div class="weather-city">إدنبرة</div><div class="weather-temp">9°C</div><div class="weather-desc">رياح قوية وبرد</div></div>
+      <div class="weather-card"><div class="weather-icon">🌨️</div><div class="weather-city">الهاي لاندز</div><div class="weather-temp">6°C</div><div class="weather-desc">برد شديد + أمطار + ثلوج أحياناً</div></div>
+      <div class="weather-card"><div class="weather-icon">🌤️</div><div class="weather-city">يورك</div><div class="weather-temp">12°C</div><div class="weather-desc">معتدل مع غيوم</div></div>
+      <div class="weather-card"><div class="weather-icon">🌥️</div><div class="weather-city">أكسفورد</div><div class="weather-temp">13°C</div><div class="weather-desc">معتدل — مناسب للمشي</div></div>
+      <div class="weather-card"><div class="weather-icon">🌊</div><div class="weather-city">برايتون</div><div class="weather-temp">12°C</div><div class="weather-desc">رياح بحرية ومنعش</div></div>
+    </div>
+    <div class="card" style="margin-top:1.5rem">
+      <div class="ch"><div class="ci" style="background:rgba(255,180,68,.12)">👕</div><div><div class="ct">نصيحة اللبس</div></div></div>
+      <p style="font-size:.9rem;color:var(--muted);line-height:1.8">البسوا <strong style="color:var(--text)">طبقات (Layers)</strong> — تيشيرت + هودي + جاكيت ضد المطر. في الهاي لاندز ممكن تحتاجون قلنسوة وقفازات خفيفة. الجو يتغير كل ساعة حرفياً!</p>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: EMERGENCY ==================== -->
+  <div id="pnl-emergency" class="pnl">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">🆘 أرقام وجهات الطوارئ المهمة — احفظوها في الجوال!</p>
+    </div>
+    
+    <div class="sec-title">📞 أرقام الطوارئ</div>
+    <div class="emer"><div class="emer-icon">🚨</div><div><div class="emer-title">الطوارئ العامة (شرطة / إسعاف / إطفاء)</div><div class="emer-num">999 أو 112</div></div></div>
+    <div class="emer"><div class="emer-icon">🏥</div><div><div class="emer-title">خط NHS غير الطارئ</div><div class="emer-num">111</div></div></div>
+    <div class="emer"><div class="emer-icon">🇸🇦</div><div><div class="emer-title">السفارة السعودية في لندن</div><div class="emer-num">+44 20 7917 3000</div></div></div>
+    <div class="emer"><div class="emer-icon">🚗</div><div><div class="emer-title">مساعدة الطريق — AA Breakdown</div><div class="emer-num">0800 887 766</div></div></div>
+    <div class="emer"><div class="emer-icon">💳</div><div><div class="emer-title">إيقاف بطاقة الراجحي (الدولي)</div><div class="emer-num">+966 920003344</div></div></div>
+    <div class="emer"><div class="emer-icon">📱</div><div><div class="emer-title">STC الدولي</div><div class="emer-num">+966 900</div></div></div>
+    
+    <div class="sec-title" style="margin-top:1.5rem">🏥 أقرب المستشفيات</div>
+    <div class="g2">
+      <div class="card"><div style="font-weight:700;margin-bottom:4px">⚓ بورتسموث</div><div style="font-size:.85rem;color:var(--muted)">Queen Alexandra Hospital</div><a href="https://www.google.com/maps/search/?api=1&query=Queen+Alexandra+Hospital+Portsmouth" target="_blank" class="gmap-link" style="margin-top:8px">📍 الموقع</a></div>
+      <div class="card"><div style="font-weight:700;margin-bottom:4px">🏰 إدنبرة</div><div style="font-size:.85rem;color:var(--muted)">Royal Infirmary of Edinburgh</div><a href="https://www.google.com/maps/search/?api=1&query=Royal+Infirmary+Edinburgh" target="_blank" class="gmap-link" style="margin-top:8px">📍 الموقع</a></div>
+      <div class="card"><div style="font-weight:700;margin-bottom:4px">🏴 إنفرنيس</div><div style="font-size:.85rem;color:var(--muted)">Raigmore Hospital</div><a href="https://www.google.com/maps/search/?api=1&query=Raigmore+Hospital+Inverness" target="_blank" class="gmap-link" style="margin-top:8px">📍 الموقع</a></div>
+      <div class="card"><div style="font-weight:700;margin-bottom:4px">🛡️ يورك</div><div style="font-size:.85rem;color:var(--muted)">York Hospital</div><a href="https://www.google.com/maps/search/?api=1&query=York+Hospital" target="_blank" class="gmap-link" style="margin-top:8px">📍 الموقع</a></div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: PHRASES ==================== -->
+  <div id="pnl-phrases" class="pnl">
+    <div class="card-glass">
+      <p style="font-size:.92rem;font-weight:600;">🗣️ عبارات إنجليزية مفيدة للمواقف اليومية — احفظوها أو صوروها!</p>
+    </div>
+    <div class="card">
+      <div class="sec-title">🏨 في الفندق</div>
+      <div class="phrase"><span class="phrase-ar">عندي حجز باسم...</span><span class="phrase-en">I have a reservation under the name...</span></div>
+      <div class="phrase"><span class="phrase-ar">وقت تسليم الغرفة متى؟</span><span class="phrase-en">What time is check-out?</span></div>
+      <div class="phrase"><span class="phrase-ar">ممكن غرفة بسريرين؟</span><span class="phrase-en">Can I have a twin room please?</span></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🍽️ في المطعم</div>
+      <div class="phrase"><span class="phrase-ar">طاولة لشخصين لو سمحت</span><span class="phrase-en">A table for two, please</span></div>
+      <div class="phrase"><span class="phrase-ar">هل عندكم أكل حلال؟</span><span class="phrase-en">Do you have halal food?</span></div>
+      <div class="phrase"><span class="phrase-ar">الحساب لو سمحت</span><span class="phrase-en">The bill, please</span></div>
+      <div class="phrase"><span class="phrase-ar">بدون لحم خنزير</span><span class="phrase-en">No pork, please</span></div>
+      <div class="phrase"><span class="phrase-ar">هل فيه مكسرات؟</span><span class="phrase-en">Does it contain nuts?</span></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🚗 القيادة والتنقل</div>
+      <div class="phrase"><span class="phrase-ar">وين أقرب محطة بنزين؟</span><span class="phrase-en">Where is the nearest petrol station?</span></div>
+      <div class="phrase"><span class="phrase-ar">كم المسافة لـ...؟</span><span class="phrase-en">How far is it to...?</span></div>
+      <div class="phrase"><span class="phrase-ar">وين الموقف؟</span><span class="phrase-en">Where can I park?</span></div>
+      <div class="phrase"><span class="phrase-ar">الطريق مسدود</span><span class="phrase-en">The road is closed</span></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🆘 الطوارئ</div>
+      <div class="phrase"><span class="phrase-ar">أحتاج مساعدة!</span><span class="phrase-en">I need help!</span></div>
+      <div class="phrase"><span class="phrase-ar">اتصلوا بالإسعاف</span><span class="phrase-en">Call an ambulance!</span></div>
+      <div class="phrase"><span class="phrase-ar">ضيعت جوازي</span><span class="phrase-en">I've lost my passport</span></div>
+      <div class="phrase"><span class="phrase-ar">أنا سعودي وأحتاج السفارة</span><span class="phrase-en">I'm Saudi, I need the embassy</span></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">🛍️ التسوق</div>
+      <div class="phrase"><span class="phrase-ar">كم سعر هذا؟</span><span class="phrase-en">How much is this?</span></div>
+      <div class="phrase"><span class="phrase-ar">هل فيه خصم؟</span><span class="phrase-en">Is there a discount?</span></div>
+      <div class="phrase"><span class="phrase-ar">ممكن أرجعه؟</span><span class="phrase-en">Can I return this?</span></div>
+      <div class="phrase"><span class="phrase-ar">أبي مقاس أكبر</span><span class="phrase-en">I need a bigger size</span></div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: NOTES ==================== -->
+  <div id="pnl-notes" class="pnl">
+    <div class="card">
+      <div class="ch"><div class="ci" style="background:rgba(167,139,250,.12)">📝</div><div><div class="ct">ملاحظات ومذكرات الرحلة</div><div class="cs">اكتب أي شي تبي تتذكره — يحفظ تلقائياً في المتصفح</div></div></div>
+      <textarea id="trip-notes" placeholder="اكتب ملاحظاتك هنا... مثلاً: أسماء أماكن حبيتوها، أرقام حجوزات، أفكار للرحلة الجاية..." oninput="saveNotes()"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn out" onclick="clearNotes()">🗑️ مسح الملاحظات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANEL: TIPS ==================== -->
+  <div id="pnl-tips" class="pnl">
+    <div class="tip"><div class="ti">🪪</div><div><div class="tt">رخصة القيادة</div><div class="td">الرخصة السعودية مقبولة، لكن الأفضل جداً تطلعون الرخصة الدولية تفادياً لأي تعقيد من شركة التأجير.</div></div></div>
+    <div class="tip"><div class="ti">🛣️</div><div><div class="tt">القيادة في بريطانيا</div><div class="td">الدركسون يمين والمسارات يسار. أول كم ساعة بتحسون بغرابة بس بتتعودون بسرعة. احذروا كاميرات السرعة — الغرامات غالية!</div></div></div>
+    <div class="tip"><div class="ti">💳</div><div><div class="tt">الدفع والقطة</div><div class="td">الكاش شبه معدوم. استخدموا بطاقات السفر (Urpay أو StcPay أو Alrajhi Travel). الأفضل واحد يدفع وتتحاسبون نهاية الرحلة.</div></div></div>
+    <div class="tip"><div class="ti">🧥</div><div><div class="tt">جو اسكتلندا</div><div class="td">حتى نهاية أبريل، اسكتلندا باردة وهواها قوي ومطرها فجأة. جاكيت Windbreaker ضروري جداً.</div></div></div>
+    <div class="tip"><div class="ti">🅿️</div><div><div class="tt">مواقف السيارات</div><div class="td">حملوا تطبيقات RingGo و PayByPhone. أغلب المواقف تدفع بالتطبيق وتحط رقم اللوحة.</div></div></div>
+    <div class="tip"><div class="ti">📱</div><div><div class="tt">الإنترنت والاتصال</div><div class="td">فعلوا e-SIM بريطانية (مثل Three أو giffgaff) أرخص بكثير من التجوال. الإشارة في الهاي لاندز ضعيفة — حملوا خرائط Offline!</div></div></div>
+    <div class="tip"><div class="ti">⏰</div><div><div class="tt">فارق التوقيت</div><div class="td">بريطانيا متأخرة عن السعودية بـ 2 ساعة (توقيت صيفي BST). يعني لو الساعة 10 الصبح عندهم، عندنا 12 الظهر.</div></div></div>
+    <div class="tip"><div class="ti">🔌</div><div><div class="tt">الكهرباء</div><div class="td">بريطانيا تستخدم فيش ثلاثي (Type G). اشتروا محول من قبل أو من أي سوبرماركت هناك.</div></div></div>
+    <div class="tip"><div class="ti">🚙</div><div><div class="tt">الدوارات (Roundabouts)</div><div class="td">كثيرة جداً في بريطانيا. القاعدة: أعط الأولوية للقادم من يمينك (وأنت داخل من اليسار). تعودوا عليها!</div></div></div>
+    <div class="tip"><div class="ti">🛒</div><div><div class="tt">السوبرماركت</div><div class="td">Tesco و Sainsbury's و Aldi أرخص خيارات. M&S Food للأكل الجاهز الممتاز. اشتروا ماء وسناكات للطريق.</div></div></div>
+    <div class="tip"><div class="ti">🍖</div><div><div class="tt">الأكل الحلال</div><div class="td">في المدن الكبيرة حلال متوفر بسهولة. في الريف والهاي لاندز، الأفضل تشترون من السوبرماركت وتطبخون أو تاكلون سمك Fish & Chips.</div></div></div>
+    <div class="tip"><div class="ti">📸</div><div><div class="tt">التصوير</div><div class="td">الهاي لاندز من أجمل الأماكن للتصوير في العالم — الساعة الذهبية (قبل الغروب) وقتها مثالي. خذوا باور بانك!</div></div></div>
+    <div class="tip"><div class="ti">🎫</div><div><div class="tt">الحجز المسبق</div><div class="td">قلعة إدنبرة وبعض الأماكن تحتاج حجز أونلاين مسبق — لا تروحون بدون حجز عشان ما تضيعون وقتكم.</div></div></div>
+  </div>
+
+</div>
+
+<script>
+// ===== DATA =====
+var ITIN=[
+  {t:"يوم الوصول",d:"السبت 18 أبريل",e:"🛬",a:[
+    {h:"14:35 العصر",x:"<span>الوصول لمطار هيثرو (صالة 4) واستلام السيارة</span> <a href='https://www.google.com/maps/search/?api=1&query=Heathrow+Terminal+4' class='gmap-link blue-btn' target='_blank'>📍 صالة 4</a>"},
+    {h:"المساء",x:"<span>التوجه إلى بورتسموث واستلام السكن (ساعة ونص تقريباً)</span> <a href='https://www.google.com/maps/search/?api=1&query=Portsmouth+UK' class='gmap-link' target='_blank'>📍 بورتسموث</a>"}
+  ]},
+  {t:"أيام بورتسموث",d:"19 - 24 أبريل (6 أيام)",e:"⚓",a:[
+    {h:"خيار تسوق",x:"<span>أوتليت ومطاعم Gunwharf Quays</span> <a href='https://www.google.com/maps/search/?api=1&query=Gunwharf+Quays' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار تاريخي",x:"<span>الميناء التاريخي (Historic Dockyard)</span> <a href='https://www.google.com/maps/search/?api=1&query=Portsmouth+Historic+Dockyard' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار ترفيهي",x:"<span>برج سبيناكر (إطلالة بانورامية خرافية)</span> <a href='https://www.google.com/maps/search/?api=1&query=Spinnaker+Tower' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار طبيعة",x:"<span>رحلة بالعبارة لجزيرة Isle of Wight</span> <a href='https://www.google.com/maps/search/?api=1&query=Wightlink+Portsmouth' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"رحلة قريبة 1",x:"<span>يوم في برايتون (شاطئ + مطاعم + أجواء)</span> <a href='https://www.google.com/maps/search/?api=1&query=Brighton+Palace+Pier' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"رحلة قريبة 2",x:"<span>مدينة وينشستر التاريخية (كاتدرائية ضخمة)</span> <a href='https://www.google.com/maps/search/?api=1&query=Winchester+Cathedral' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"شاطئ",x:"<span>شاطئ Southsea ومتنزه الواجهة البحرية</span> <a href='https://www.google.com/maps/search/?api=1&query=Southsea+Beach' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"تسوق إضافي",x:"<span>مركز Cascades ومحلات Commercial Road</span> <a href='https://www.google.com/maps/search/?api=1&query=Cascades+Shopping+Centre+Portsmouth' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"}
+  ]},
+  {t:"انطلاق الـ Road Trip!",d:"الجمعة 25 أبريل",e:"🚗",a:[
+    {h:"الصباح",x:"<span>توديع بورتسموث والانطلاق شمالاً</span>"},
+    {h:"توقف 1",x:"<span>مدينة أكسفورد — جامعات تاريخية ومقاهي</span> <a href='https://www.google.com/maps/search/?api=1&query=Oxford+City+Centre' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"توقف 2",x:"<span>قرى Cotswolds — الريف الإنجليزي الخيالي</span> <a href='https://www.google.com/maps/search/?api=1&query=Bourton-on-the-Water' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"الوصول",x:"<span>منطقة البحيرات (Lake District) — المبيت</span> <a href='https://www.google.com/maps/search/?api=1&query=Windermere+Lake+District' class='gmap-link blue-btn' target='_blank'>📍 البحيرات</a>"}
+  ]},
+  {t:"استكشاف منطقة البحيرات",d:"السبت 26 أبريل",e:"⛰️",a:[
+    {h:"خيار 1",x:"<span>جولة بالقارب في بحيرة Windermere</span> <a href='https://www.google.com/maps/search/?api=1&query=Windermere+Lake+Cruises' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار 2",x:"<span>بلدة Keswick الجميلة للمشي</span> <a href='https://www.google.com/maps/search/?api=1&query=Keswick+Lake+District' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار 3",x:"<span>بلدة Ambleside — مطاعم ومحلات</span> <a href='https://www.google.com/maps/search/?api=1&query=Ambleside+Lake+District' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"المساء",x:"<span>الانطلاق باتجاه إدنبرة (3 ساعات)</span> <a href='https://www.google.com/maps/search/?api=1&query=Edinburgh+City+Centre' class='gmap-link blue-btn' target='_blank'>📍 إدنبرة</a>"}
+  ]},
+  {t:"عاصمة اسكتلندا — إدنبرة",d:"الأحد 27 أبريل",e:"🏰",a:[
+    {h:"الصباح",x:"<span>قلعة إدنبرة العظيمة (حجز مسبق!)</span> <a href='https://www.google.com/maps/search/?api=1&query=Edinburgh+Castle' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"تمشية",x:"<span>الشارع الملكي Royal Mile</span> <a href='https://www.google.com/maps/search/?api=1&query=Royal+Mile+Edinburgh' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"رياضي",x:"<span>صعود Arthur's Seat — إطلالة خرافية</span> <a href='https://www.google.com/maps/search/?api=1&query=Arthur%27s+Seat+Edinburgh' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"تصوير",x:"<span>قرية Dean Village الساحرة</span> <a href='https://www.google.com/maps/search/?api=1&query=Dean+Village+Edinburgh' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"مساء",x:"<span>شارع Grassmarket — مطاعم ومقاهي</span> <a href='https://www.google.com/maps/search/?api=1&query=Grassmarket+Edinburgh' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"}
+  ]},
+  {t:"المرتفعات الاسكتلندية (الهاي لاندز)",d:"28 - 29 أبريل",e:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",a:[
+    {h:"أجمل طريق",x:"<span>وادي Glencoe — يخطف الأنفاس</span> <a href='https://www.google.com/maps/search/?api=1&query=Glencoe+Valley+Viewpoint' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"البحيرة",x:"<span>بحيرة Loch Ness وقلعة Urquhart</span> <a href='https://www.google.com/maps/search/?api=1&query=Urquhart+Castle' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"قلعة",x:"<span>قلعة Eilean Donan الأشهر في التصوير</span> <a href='https://www.google.com/maps/search/?api=1&query=Eilean+Donan+Castle' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"محمية",x:"<span>حديقة Cairngorms الوطنية</span> <a href='https://www.google.com/maps/search/?api=1&query=Cairngorms+National+Park' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"إضافي",x:"<span>جسر Glenfinnan (مشهد من هاري بوتر)</span> <a href='https://www.google.com/maps/search/?api=1&query=Glenfinnan+Viaduct' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"}
+  ]},
+  {t:"العودة جنوباً",d:"30 أبريل - 1 مايو",e:"🛣️",a:[
+    {h:"الوجهة",x:"<span>النزول من اسكتلندا باتجاه شمال إنجلترا</span>"},
+    {h:"خيار 1",x:"<span>يورك — الأسوار التاريخية + York Minster</span> <a href='https://www.google.com/maps/search/?api=1&query=York+Minster' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار 2",x:"<span>The Shambles — الشارع اللي يشبه هاري بوتر</span> <a href='https://www.google.com/maps/search/?api=1&query=The+Shambles+York' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار 3",x:"<span>مانشستر — تسوق + ملعب Old Trafford</span> <a href='https://www.google.com/maps/search/?api=1&query=Manchester+Arndale' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"خيار 4",x:"<span>ليدز — مدينة حيوية + Victoria Quarter</span> <a href='https://www.google.com/maps/search/?api=1&query=Victoria+Quarter+Leeds' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"}
+  ]},
+  {t:"يوم التسوق والتجهيز",d:"السبت 2 مايو",e:"🛍️",a:[
+    {h:"تسوق",x:"<span>أوتليت Bicester Village (ماركات بخصومات)</span> <a href='https://www.google.com/maps/search/?api=1&query=Bicester+Village' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"سياحي",x:"<span>قلعة ويندسور (قريبة من المطار)</span> <a href='https://www.google.com/maps/search/?api=1&query=Windsor+Castle' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"تسوق إضافي",x:"<span>Westfield London — أكبر مول في أوروبا</span> <a href='https://www.google.com/maps/search/?api=1&query=Westfield+London+Shepherd+Bush' class='gmap-link' target='_blank'>📍 قوقل ماب</a>"},
+    {h:"المبيت",x:"<span>فندق قريب من هيثرو</span> <a href='https://www.google.com/maps/search/?api=1&query=Heathrow+Airport+Hotels' class='gmap-link blue-btn' target='_blank'>📍 فنادق هيثرو</a>"}
+  ]},
+  {t:"العودة للوطن ✈️",d:"الأحد 3 مايو",e:"🇸🇦",a:[
+    {h:"06:30",x:"<span>تسليم السيارة لشركة التأجير</span> <a href='https://www.google.com/maps/search/?api=1&query=Heathrow+Car+Rental+Return' class='gmap-link' target='_blank'>📍 مواقف التأجير</a>"},
+    {h:"10:00",x:"<span>إقلاع SV110 من صالة 2 — يلا بسلامة!</span> <a href='https://www.google.com/maps/search/?api=1&query=Heathrow+Terminal+2' class='gmap-link blue-btn' target='_blank'>📍 صالة 2</a>"}
+  ]}
+];
+
+var RESTAURANTS=[
+  // PORTSMOUTH
+  {city:"portsmouth",name:"Akbar's",type:"مطعم هندي حلال",desc:"من أفضل المطاعم الهندية في بورتسموث — أكلهم طازج وكمياتهم كبيرة.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Akbars+Restaurant+Portsmouth"},
+  {city:"portsmouth",name:"Istanbul BBQ",type:"مطعم تركي حلال",desc:"مشاوي تركية أصلية — كباب وشاورما ومقبلات. ممتاز للعشاء.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Istanbul+BBQ+Portsmouth"},
+  {city:"portsmouth",name:"The Tenth Hole",type:"Fish & Chips",desc:"من أشهر محلات السمك في المدينة — جربوا Cod & Chips الكلاسيكي.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=The+Tenth+Hole+Portsmouth"},
+  {city:"portsmouth",name:"Noodle Bar Gunwharf",type:"مطعم آسيوي",desc:"نودلز ورز مقلي في قنورف. خيار سريع ولذيذ.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=Wagamama+Gunwharf+Quays"},
+  {city:"portsmouth",name:"Pizza Express Gunwharf",type:"بيتزا إيطالية",desc:"بيتزا ممتازة في قنورف — خيارات بدون لحم.",tags:["price:££"],map:"https://www.google.com/maps/search/?api=1&query=Pizza+Express+Gunwharf+Quays"},
+  // LONDON
+  {city:"london",name:"Dishoom King's Cross",type:"مطعم هندي فاخر",desc:"من أشهر مطاعم لندن — فطور بومباي وأكل هندي عصري.",tags:["halal","price:£££","rating:4.5"],map:"https://www.google.com/maps/search/?api=1&query=Dishoom+Kings+Cross+London"},
+  {city:"london",name:"Kebab Kid",type:"مشاوي شرقية حلال",desc:"كباب ممتاز وأسعار معقولة في وسط لندن.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Kebab+Kid+London"},
+  {city:"london",name:"Nando's",type:"دجاج مشوي",desc:"سلسلة شهيرة — فروعهم فيها خيارات حلال. اسألوا الفرع.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Nandos+London"},
+  // EDINBURGH
+  {city:"edinburgh",name:"Mosque Kitchen",type:"مطعم باكستاني حلال",desc:"أشهر مطعم حلال في إدنبرة — رخيص وكمياته ضخمة. لازم تجربونه.",tags:["halal","price:£","rating:4.3"],map:"https://www.google.com/maps/search/?api=1&query=Mosque+Kitchen+Edinburgh"},
+  {city:"edinburgh",name:"Hanam's",type:"مطعم كردي حلال",desc:"مطعم كردي شرق أوسطي — مشاوي وكباب بجودة عالية.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Hanams+Edinburgh"},
+  {city:"edinburgh",name:"Oink",type:"ساندويتشات لحم مشوي",desc:"ساندويتش لحم خنزير مشوي (غير حلال) لكنه من معالم إدنبرة. يمكن تشوفونه بس.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=Oink+Edinburgh"},
+  {city:"edinburgh",name:"The Elephant House",type:"مقهى تاريخي",desc:"المقهى اللي كتبت فيه J.K. Rowling هاري بوتر! قهوة وكيك ممتاز.",tags:["price:£","rating:4.0"],map:"https://www.google.com/maps/search/?api=1&query=The+Elephant+House+Edinburgh"},
+  // LAKES
+  {city:"lakes",name:"Francine's Coffee House",type:"مقهى وفطور",desc:"فطور إنجليزي وكيك في Windermere — أجواء مريحة جداً.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=Francines+Coffee+House+Windermere"},
+  {city:"lakes",name:"Homeground Coffee",type:"كوفي سبيشالتي",desc:"من أفضل محلات القهوة في منطقة البحيرات.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=Homeground+Coffee+Windermere"},
+  // YORK
+  {city:"york",name:"Efes Turkish Restaurant",type:"مطعم تركي حلال",desc:"مشاوي تركية ومزات في قلب يورك — حلال ولذيذ.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Efes+Turkish+Restaurant+York"},
+  {city:"york",name:"Bettys Café Tea Rooms",type:"مقهى إنجليزي كلاسيكي",desc:"تجربة الشاي الإنجليزي الأصلي — كيك وسكونز وأجواء فخمة.",tags:["price:£££","rating:4.5"],map:"https://www.google.com/maps/search/?api=1&query=Bettys+Cafe+Tea+Rooms+York"},
+  // HIGHLANDS
+  {city:"highlands",name:"The Clachnaharry Inn",type:"مطعم بريطاني تقليدي",desc:"في إنفرنيس — أكل بريطاني تقليدي مع إطلالة.",tags:["price:££"],map:"https://www.google.com/maps/search/?api=1&query=Clachnaharry+Inn+Inverness"},
+  {city:"highlands",name:"Café 1",type:"مقهى ومطعم",desc:"أحسن مطعم في إنفرنيس — أكل اسكتلندي حديث.",tags:["price:£££","rating:4.4"],map:"https://www.google.com/maps/search/?api=1&query=Cafe+1+Inverness"},
+  // OXFORD
+  {city:"oxford",name:"Tahina",type:"مطعم شرق أوسطي حلال",desc:"حمص وفلافل وشاورما — حلال ولذيذ في قلب أكسفورد.",tags:["halal","price:£"],map:"https://www.google.com/maps/search/?api=1&query=Tahina+Oxford"},
+  {city:"oxford",name:"Covered Market",type:"سوق مغطى تاريخي",desc:"سوق قديم فيه أكل ومقاهي ومحلات — لازم تمرون عليه.",tags:["price:£"],map:"https://www.google.com/maps/search/?api=1&query=Covered+Market+Oxford"},
+  // BRIGHTON
+  {city:"brighton",name:"The Lanes",type:"منطقة مطاعم ومحلات",desc:"شوارع ضيقة فيها مطاعم ومحلات فريدة — جوها حلو.",tags:["price:££"],map:"https://www.google.com/maps/search/?api=1&query=The+Lanes+Brighton"},
+  {city:"brighton",name:"Curry Leaf Cafe",type:"مطعم هندي",desc:"أكل هندي ممتاز على الشاطئ — خيارات حلال متوفرة.",tags:["halal","price:££"],map:"https://www.google.com/maps/search/?api=1&query=Curry+Leaf+Cafe+Brighton"},
+  // MANCHESTER
+  {city:"manchester",name:"Archie's",type:"برجر حلال",desc:"سلسلة برجر حلال مشهورة في مانشستر — برجر وميلك شيك.",tags:["halal","price:££","rating:4.2"],map:"https://www.google.com/maps/search/?api=1&query=Archies+Manchester"},
+  {city:"manchester",name:"Curry Mile Rusholme",type:"شارع المطاعم الآسيوية",desc:"شارع كامل مطاعم هندية وباكستانية حلال — الخيارات لا تنتهي.",tags:["halal","price:£"],map:"https://www.google.com/maps/search/?api=1&query=Curry+Mile+Manchester"}
+];
+
+var PLACES=[
+  {city:"portsmouth",name:"برج سبيناكر",emoji:"🗼",desc:"إطلالة بانورامية 360° على المدينة والبحر من ارتفاع 170 متر.",map:"https://www.google.com/maps/search/?api=1&query=Spinnaker+Tower"},
+  {city:"portsmouth",name:"الميناء التاريخي",emoji:"⚓",desc:"سفن حربية أصلية + متحف بحري — تجربة تاريخية ممتازة.",map:"https://www.google.com/maps/search/?api=1&query=Portsmouth+Historic+Dockyard"},
+  {city:"portsmouth",name:"جزيرة Isle of Wight",emoji:"🏝️",desc:"عبّارة 45 دقيقة — شواطئ وطبيعة خلابة ليوم كامل.",map:"https://www.google.com/maps/search/?api=1&query=Isle+of+Wight"},
+  {city:"portsmouth",name:"شاطئ Southsea",emoji:"🏖️",desc:"المتنزه البحري — مشي وكافيهات ومناظر غروب خرافية.",map:"https://www.google.com/maps/search/?api=1&query=Southsea+Beach"},
+  {city:"london",name:"Big Ben & Westminster",emoji:"🕰️",desc:"أشهر معالم لندن — ساعة بيق بن والبرلمان.",map:"https://www.google.com/maps/search/?api=1&query=Big+Ben+London"},
+  {city:"london",name:"Tower Bridge",emoji:"🌉",desc:"الجسر الأيقوني — ممشى زجاجي فوقه بإطلالة مذهلة.",map:"https://www.google.com/maps/search/?api=1&query=Tower+Bridge+London"},
+  {city:"london",name:"Hyde Park",emoji:"🌳",desc:"أكبر حدائق لندن — مثالي للمشي والاسترخاء.",map:"https://www.google.com/maps/search/?api=1&query=Hyde+Park+London"},
+  {city:"london",name:"Oxford Street",emoji:"🛍️",desc:"شارع التسوق الأشهر — محلات عالمية وماركات.",map:"https://www.google.com/maps/search/?api=1&query=Oxford+Street+London"},
+  {city:"edinburgh",name:"قلعة إدنبرة",emoji:"🏰",desc:"من أعظم القلاع في أوروبا — تطل على كامل المدينة.",map:"https://www.google.com/maps/search/?api=1&query=Edinburgh+Castle"},
+  {city:"edinburgh",name:"Royal Mile",emoji:"🏛️",desc:"الشارع الملكي التاريخي — من القلعة للقصر.",map:"https://www.google.com/maps/search/?api=1&query=Royal+Mile+Edinburgh"},
+  {city:"edinburgh",name:"Arthur's Seat",emoji:"⛰️",desc:"تلة بركانية وسط المدينة — إطلالة تستاهل الصعود.",map:"https://www.google.com/maps/search/?api=1&query=Arthur+Seat+Edinburgh"},
+  {city:"edinburgh",name:"Dean Village",emoji:"📸",desc:"قرية ساحرة داخل المدينة — مثالية للتصوير.",map:"https://www.google.com/maps/search/?api=1&query=Dean+Village+Edinburgh"},
+  {city:"lakes",name:"بحيرة Windermere",emoji:"🛶",desc:"أكبر بحيرة في إنجلترا — جولات بالقارب خيالية.",map:"https://www.google.com/maps/search/?api=1&query=Windermere+Lake"},
+  {city:"lakes",name:"بلدة Keswick",emoji:"🏘️",desc:"بلدة ساحرة محاطة بالجبال والبحيرات.",map:"https://www.google.com/maps/search/?api=1&query=Keswick+Lake+District"},
+  {city:"highlands",name:"وادي Glencoe",emoji:"🏔️",desc:"أجمل طريق قيادة في بريطانيا — مناظر تخطف الأنفاس.",map:"https://www.google.com/maps/search/?api=1&query=Glencoe+Valley"},
+  {city:"highlands",name:"بحيرة Loch Ness",emoji:"🐉",desc:"البحيرة الأسطورية — قلعة Urquhart على ضفتها.",map:"https://www.google.com/maps/search/?api=1&query=Loch+Ness"},
+  {city:"highlands",name:"قلعة Eilean Donan",emoji:"🏯",desc:"أكثر قلعة مصورة في اسكتلندا — على جزيرة صغيرة.",map:"https://www.google.com/maps/search/?api=1&query=Eilean+Donan+Castle"},
+  {city:"highlands",name:"جسر Glenfinnan",emoji:"🚂",desc:"الجسر من فيلم هاري بوتر — منظر أسطوري.",map:"https://www.google.com/maps/search/?api=1&query=Glenfinnan+Viaduct"},
+  {city:"york",name:"York Minster",emoji:"⛪",desc:"كاتدرائية يورك — من أكبر الكاتدرائيات القوطية في أوروبا.",map:"https://www.google.com/maps/search/?api=1&query=York+Minster"},
+  {city:"york",name:"The Shambles",emoji:"🧙",desc:"شارع من العصور الوسطى — ألهم حارة هاري بوتر.",map:"https://www.google.com/maps/search/?api=1&query=The+Shambles+York"},
+  {city:"oxford",name:"جامعة أكسفورد",emoji:"🎓",desc:"أقدم جامعة في العالم الناطق بالإنجليزية — مباني تاريخية.",map:"https://www.google.com/maps/search/?api=1&query=University+of+Oxford"},
+  {city:"oxford",name:"مكتبة Bodleian",emoji:"📚",desc:"من أقدم المكتبات في أوروبا — مبنى مذهل.",map:"https://www.google.com/maps/search/?api=1&query=Bodleian+Library+Oxford"},
+  {city:"brighton",name:"Brighton Pier",emoji:"🎡",desc:"رصيف الألعاب الشهير — أجواء حلوة وأكل بحري.",map:"https://www.google.com/maps/search/?api=1&query=Brighton+Palace+Pier"},
+  {city:"brighton",name:"Royal Pavilion",emoji:"🕌",desc:"قصر بتصميم هندي-إسلامي مذهل في قلب برايتون.",map:"https://www.google.com/maps/search/?api=1&query=Royal+Pavilion+Brighton"},
+  {city:"cotswolds",name:"Bourton-on-the-Water",emoji:"🌿",desc:"تسمى فينيسيا إنجلترا — قرية حجرية على نهر صغير.",map:"https://www.google.com/maps/search/?api=1&query=Bourton+on+the+Water"},
+  {city:"cotswolds",name:"Castle Combe",emoji:"🏡",desc:"أجمل قرية في إنجلترا — حجر ذهبي وشوارع ضيقة.",map:"https://www.google.com/maps/search/?api=1&query=Castle+Combe"}
+];
+
+var CL_ITEMS=["تأكيد حجز السيارة وإضافة تأمين Full Cover","استخراج رخصة قيادة دولية (لك ولناصر)","طباعة تذاكر الطيران (هيثرو — صالة 4 و 2)","تأكيد حجوزات السكن في بورتسموث واسكتلندا","تحميل خرائط Google للمسار (Offline)","دفع رسوم الإعفاء الإلكتروني (EVW) لبريطانيا","تفعيل باقات التجوال أو شريحة e-SIM","تحميل تطبيقات المواقف (RingGo, PayByPhone)","حجز قلعة إدنبرة أونلاين مسبقاً","تحويل مبلغ للبطاقة الدولية","تأكيد رحلة العبارة لـ Isle of Wight","مشاركة خط السير مع العائلة للاطمئنان"];
+var PK_ITEMS=["الجوازات + الرخصة السعودية + الدولية","شاحن سيارة (ولاعة) + حامل جوال للملاحة","جاكيتات ضد المطر والهواء لاسكتلندا","نظارات شمسية (القيادة وقت الغروب)","أحذية مشي مريحة جداً (قلاع وطبيعة)","أدوية طوارئ (بنادول، مغص، لصقات)","فيش كهرباء بريطاني (ثلاثي Type G)","باور بانك كبير (20000mAh على الأقل)","حقيبة ظهر صغيرة للمشي اليومي","معجون أسنان وأغراض شخصية صغيرة","ملابس داخلية وجوارب كافية","كريم واقي شمس (الشمس خادعة في بريطانيا)"];
+
+var clState={},pkState={};
+
+// ===== COUNTDOWN =====
+function updateCountdown(){
+  var target=new Date("2026-04-18T14:35:00+01:00");
+  var now=new Date();
+  var diff=target-now;
+  var el=document.getElementById("countdown");
+  if(diff<=0){el.innerHTML='<div class="cd-box"><div class="cd-num">🎉</div><div class="cd-lbl">الرحلة بدأت!</div></div>';return}
+  var d=Math.floor(diff/864e5);var h=Math.floor(diff%864e5/36e5);var m=Math.floor(diff%36e5/6e4);var s=Math.floor(diff%6e4/1e3);
+  el.innerHTML='<div class="cd-box"><div class="cd-num">'+d+'</div><div class="cd-lbl">يوم</div></div><div class="cd-box"><div class="cd-num">'+h+'</div><div class="cd-lbl">ساعة</div></div><div class="cd-box"><div class="cd-num">'+m+'</div><div class="cd-lbl">دقيقة</div></div><div class="cd-box"><div class="cd-num">'+s+'</div><div class="cd-lbl">ثانية</div></div>';
+}
+updateCountdown();setInterval(updateCountdown,1000);
+
+// ===== ITINERARY =====
+function renderItin(){
+  var c=document.getElementById("itin-list");c.innerHTML="";
+  ITIN.forEach(function(item,i){
+    var d=document.createElement("div");d.className="dc";
+    d.innerHTML='<div class="dh" onclick="tgDay('+i+')"><div><div class="dl">'+item.e+' '+item.t+'</div><div class="dd">'+item.d+'</div></div><svg class="dchv" id="dchv-'+i+'" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg></div><div class="db" id="db-'+i+'">'+item.a.map(function(a){return'<div class="act"><span class="at">'+a.h+'</span><span class="ax">'+a.x+'</span></div>';}).join("")+'</div>';
+    c.appendChild(d);
+  });
+}
+function tgDay(i){document.getElementById("db-"+i).classList.toggle("op2");document.getElementById("dchv-"+i).classList.toggle("op2")}
+
+// ===== RESTAURANTS =====
+function renderRest(filter){
+  var c=document.getElementById("rest-list");c.innerHTML="";
+  var list=filter==="all"?RESTAURANTS:RESTAURANTS.filter(function(r){return r.city===filter});
+  list.forEach(function(r){
+    var tags=r.tags.map(function(t){
+      if(t==="halal") return '<span class="rest-tag halal">✅ حلال</span>';
+      if(t.startsWith("price:")) return '<span class="rest-tag price">'+t.replace("price:","")+'</span>';
+      if(t.startsWith("rating:")) return '<span class="rest-tag rating">⭐ '+t.replace("rating:","")+'</span>';
+      return '';
+    }).join("");
+    var cityLabels={portsmouth:"⚓ بورتسموث",london:"🏙️ لندن",edinburgh:"🏰 إدنبرة",lakes:"⛰️ البحيرات",york:"🛡️ يورك",highlands:"🏴 الهاي لاندز",oxford:"📚 أكسفورد",brighton:"🎡 برايتون",manchester:"⚽ مانشستر"};
+    c.innerHTML+='<div class="rest-card"><div class="rest-city">'+(cityLabels[r.city]||r.city)+'</div><div class="rest-name">'+r.name+'</div><div class="rest-type">'+r.type+'</div><div class="rest-desc">'+r.desc+'</div><div class="rest-tags">'+tags+'</div><a href="'+r.map+'" target="_blank" class="gmap-link">📍 الموقع</a></div>';
+  });
+}
+function filterRest(f,btn){
+  document.querySelectorAll("#rest-filters .flt").forEach(function(b){b.classList.remove("on")});
+  btn.classList.add("on");renderRest(f);
+}
+
+// ===== PLACES =====
+function renderPlaces(filter){
+  var c=document.getElementById("places-list");c.innerHTML="";
+  var list=filter==="all"?PLACES:PLACES.filter(function(p){return p.city===filter});
+  list.forEach(function(p){
+    c.innerHTML+='<div class="gallery-item"><div class="gallery-emoji">'+p.emoji+'</div><div class="gallery-info"><div class="gallery-name">'+p.name+'</div><div class="gallery-loc" style="margin-bottom:8px">'+p.desc+'</div><a href="'+p.map+'" target="_blank" class="gmap-link">📍 الموقع</a></div></div>';
+  });
+}
+function filterPlaces(f,btn){
+  document.querySelectorAll("#places-filters .flt").forEach(function(b){b.classList.remove("on")});
+  btn.classList.add("on");renderPlaces(f);
+}
+
+// ===== CHECKLIST =====
+function renderCL(){renderList(CL_ITEMS,"cl-items","cl",clState);renderList(PK_ITEMS,"pk-items","pk",pkState);updProg()}
+function renderList(items,cid,key,state){
+  var c=document.getElementById(cid);c.innerHTML="";
+  items.forEach(function(item,i){
+    var done=state[i]||false;
+    var li=document.createElement("li");
+    li.innerHTML='<button class="cb'+(done?" ck":"")+'" onclick="tgCB(\''+key+'\','+i+',this)">'+(done?"✓":"")+'</button><span class="ct2'+(done?" ck":"")+'">'+item+'</span>';
+    c.appendChild(li);
+  });
+}
+function tgCB(key,i,btn){
+  var state=key==="cl"?clState:pkState;
+  state[i]=!state[i];btn.classList.toggle("ck");
+  btn.textContent=btn.classList.contains("ck")?"✓":"";
+  btn.nextElementSibling.classList.toggle("ck");updProg();
+}
+function updProg(){
+  var done=Object.values(clState).filter(Boolean).length+Object.values(pkState).filter(Boolean).length;
+  var total=CL_ITEMS.length+PK_ITEMS.length;
+  var pct=total>0?Math.round(done/total*100):0;
+  document.getElementById("cl-prog").textContent=done+" / "+total+" مكتملة";
+  document.getElementById("check-done").textContent=done;
+  document.getElementById("check-total").textContent=total;
+  document.getElementById("check-pct").textContent=pct+"%";
+}
+
+// ===== BUDGET =====
+function updBudget(){
+  var b=parseFloat(document.getElementById("budg-inp").value)||0;
+  var s=15050;var r=b-s;var p=b>0?Math.min(s/b*100,100):0;
+  anim("kv-total",b);anim("kv-spent",s);anim("kv-rem",r);anim("kv-per",Math.round(s/2));
+  document.getElementById("prog-pct").textContent=Math.round(p)+"%";
+  document.getElementById("prog-f").style.width=p+"%";
+  document.getElementById("prog-f").style.background=p>=100?"linear-gradient(90deg,#ef4444,#dc2626)":"linear-gradient(90deg,var(--accent),var(--purple))";
+}
+function anim(id,target){
+  var el=document.getElementById(id);
+  var start=parseFloat((el.textContent||"0").replace(/[^0-9.-]/g,""))||0;
+  var dur=800,t0=performance.now();
+  function run(now){var p=Math.min((now-t0)/dur,1),e=1-Math.pow(1-p,3);var v=Math.round(start+(target-start)*e);el.textContent=v.toLocaleString("ar-SA");if(p<1)requestAnimationFrame(run)}
+  requestAnimationFrame(run);
+}
+
+// ===== CURRENCY CONVERTER =====
+var RATE=4.85;
+function convertCurrency(from){
+  if(from==="sar"){var v=parseFloat(document.getElementById("conv-sar").value)||0;document.getElementById("conv-gbp").value=v>0?(v/RATE).toFixed(2):""}
+  else{var v=parseFloat(document.getElementById("conv-gbp").value)||0;document.getElementById("conv-sar").value=v>0?(v*RATE).toFixed(2):""}
+}
+
+// ===== SPLIT CALCULATOR =====
+function calcSplit(){
+  var amt=parseFloat(document.getElementById("split-amount").value)||0;
+  var ppl=parseInt(document.getElementById("split-people").value)||2;
+  if(amt>0&&ppl>0){
+    document.getElementById("split-result").style.display="block";
+    document.getElementById("split-val").textContent=Math.ceil(amt/ppl).toLocaleString("ar-SA");
+  }
+}
+
+// ===== NOTES =====
+function saveNotes(){try{localStorage.setItem("nw-trip-notes",document.getElementById("trip-notes").value)}catch(e){}}
+function loadNotes(){try{var n=localStorage.getItem("nw-trip-notes");if(n)document.getElementById("trip-notes").value=n}catch(e){}}
+function clearNotes(){document.getElementById("trip-notes").value="";try{localStorage.removeItem("nw-trip-notes")}catch(e){}}
+
+// ===== TABS =====
+var tabs=["itin","map","rest","places","budget","transport","check","weather","emergency","phrases","notes","tips"];
+function sw(name,btn){
+  tabs.forEach(function(t){var p=document.getElementById("pnl-"+t);if(p)p.classList.remove("on")});
+  document.querySelectorAll(".tb").forEach(function(b){b.classList.remove("on")});
+  var p=document.getElementById("pnl-"+name);if(p)p.classList.add("on");if(btn)btn.classList.add("on");
+  window.scrollTo({top:document.querySelector(".tabs-wrap").offsetTop,behavior:"smooth"});
+}
+
+// ===== MAP =====
+var map=L.map('map').setView([54.0,-2.5],6);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CartoDB © OSM'}).addTo(map);
+
+var pts={heathrow:[51.47,-0.4543],portsmouth:[50.8198,-1.088],oxford:[51.752,-1.2577],cotswolds:[51.8868,-1.8031],lakedistrict:[54.3739,-2.9376],edinburgh:[55.9533,-3.1883],highlands:[56.6806,-5.1051],york:[53.959,-1.0815],manchester:[53.4808,-2.2426],brighton:[50.8225,-0.1372],windsor:[51.4839,-0.6044],bicester:[51.9,-1.1537]};
+
+function mkIcon(color){return L.divIcon({className:'',html:'<div style="width:14px;height:14px;background:'+color+';border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',iconSize:[14,14],iconAnchor:[7,7],popupAnchor:[0,-10]})}
+
+var labels={heathrow:"✈️ مطار هيثرو",portsmouth:"⚓ بورتسموث",oxford:"📚 أكسفورد",cotswolds:"🌿 كوتسوولدز",lakedistrict:"⛰️ منطقة البحيرات",edinburgh:"🏰 إدنبرة",highlands:"🏴 الهاي لاندز",york:"🛡️ يورك",manchester:"⚽ مانشستر",brighton:"🎡 برايتون",windsor:"👑 قلعة ويندسور",bicester:"🛍️ بيستر فيليج"};
+
+Object.keys(pts).forEach(function(k){
+  var color=k==="heathrow"?"#ffb444":["portsmouth","edinburgh","york","manchester","brighton"].includes(k)?"#4f8fff":"#22c997";
+  L.marker(pts[k],{icon:mkIcon(color)}).addTo(map).bindPopup("<b style='font-family:Tajawal;font-size:14px'>"+labels[k]+"</b>");
+});
+
+var route=[pts.heathrow,pts.portsmouth,pts.brighton,pts.portsmouth,pts.oxford,pts.cotswolds,pts.lakedistrict,pts.edinburgh,pts.highlands,pts.york,pts.manchester,pts.bicester,pts.windsor,pts.heathrow];
+L.polyline(route,{color:'#4f8fff',weight:3,dashArray:'8,8',opacity:.7}).addTo(map);
+
+// ===== INIT =====
+renderItin();renderCL();updBudget();renderRest("all");renderPlaces("all");loadNotes();
+</script>
+</body>
+</html>
